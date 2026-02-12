@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+    <head>
+        <meta charset="UTF-8" />
+        <title>Portal</title>
+        <style>
+          body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+          header { margin-bottom: 1rem; }
+          .row { display: flex; gap: 1rem; margin: 1rem 0; }
+          .card { border: 1px solid #ddd; padding: 1rem; border-radius: .5rem; min-width: 180px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+          th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
+          th { background: #f7f7f7; }
+        </style>
+    </head>
+
+    <body>
+
+        <h1>WEB</h1>
+
+        <p>portal de rendimiento académico</p>
+        <ul>
+            <li>
+              <a th:href="@{/MySQLRendimientoTablaPrueba}"> acceso a MySQLRendimientoTablaPrueba</a>
+            </li>
+            <li>
+              <a th:href="@{/dashboard}"> Dashboard dummy</a>
+            </li>
+            <li>
+              <a th:href="@{/acercaDe}"> Acerca de</a>
+            </li>
+            <li>
+                <a th:href="@{/importar}"> Importar .csv</a>
+            </li>
+        </ul>
+
+    </body>
+</html>

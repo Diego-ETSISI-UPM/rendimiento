@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>MySQLRendimientoTablaPrueba</title>
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+      header { margin-bottom: 1rem; }
+      .row { display: flex; gap: 1rem; margin: 1rem 0; }
+      .card { border: 1px solid #ddd; padding: 1rem; border-radius: .5rem; min-width: 180px; }
+      table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+      th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
+      th { background: #f7f7f7; }
+    </style>
+  </head>
+
+  <body>
+    <h1 th:text="${mensaje}">Mensaje</h1>
+    <h1 th:text="${mensaje2}">Mensaje2</h1>
+    <h1>Contenido de la tabla prueba</h1>
+    <table>
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Texto</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="fila : ${filas}">
+        <td th:text="${fila.id}">1</td>
+        <td th:text="${fila.texto}">Texto</td>
+      </tr>
+      </tbody>
+    </table>
+    <ul>
+      <a th:href="@{/}"> volver</a>
+    </ul>
+  </body>
+</html>

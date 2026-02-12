@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard dummy</title>
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+      header { margin-bottom: 1rem; }
+      .row { display: flex; gap: 1rem; margin: 1rem 0; }
+      .card { border: 1px solid #ddd; padding: 1rem; border-radius: .5rem; min-width: 180px; }
+      table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+      th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
+      th { background: #f7f7f7; }
+    </style>
+  </head>
+
+  <body>
+
+    <header>
+      <h1>Cuadro de mando académico</h1>
+    </header>
+
+    <section>
+      <form th:action="@{/dashboard}" method="get">
+        <label for="plan">Plan de estudios:</label>
+        <select name="plan" id="plan">
+          <option value="" th:selected="${planSeleccionado == null}">-- Selecciona --</option>
+          <option th:each="p : ${planes}"
+                  th:value="${p}"
+                  th:text="${p}"
+                  th:selected="${p == planSeleccionado}">Plan</option>
+        </select>
+        <button type="submit">Buscar</button>
+      </form>
+    </section>
+
+    <section th:if="${kpis != null}">
+
+      <div class="row">
+        <div class="card">
+          <div><strong>Rendimiento medio</strong></div>
+          <div th:text="${#numbers.formatDecimal(kpis.rendimientoMedio, 1, 2)} + ' %'">0 %</div>
+        </div>
+        <div class="card">
+          <div><strong>Eficiencia media</strong></div>
+          <div th:text="${#numbers.formatDecimal(kpis.eficienciaMedia, 1, 2)} + ' %'">0 %</div>
+        </div>
+        <div class="card">
+          <div><strong>Matriculados</strong></div>
+          <div th:text="${kpis.matriculados}">0</div>
+        </div>
+        <div class="card">
+          <div><strong>Aprobados</strong></div>
+          <div th:text="${kpis.aprobados}">0</div>
+        </div>
+      </div>
+
+      <h2>Rendimiento por asignatura</h2>
+
+      <table>
+        <thead>
+        <tr>
+          <th>Asignatura</th>
+          <th>Rendimiento (%)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="a : ${asignaturas}">
+          <td th:text="${a.nombre}">Asignatura X</td>
+          <td th:text="${#numbers.formatDecimal(a.rendimiento, 1, 2)}">0.00</td>
+        </tr>
+        </tbody>
+      </table>
+
+    </section>
+
+    <ul>
+      <a th:href="@{/}"> volver</a>
+    </ul>
+
+  </body>
+
+</html>
