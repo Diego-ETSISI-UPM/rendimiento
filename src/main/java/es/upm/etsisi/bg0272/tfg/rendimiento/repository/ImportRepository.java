@@ -18,12 +18,29 @@ public class ImportRepository {
             )
         """);
     }
-    public void insertarLineas(List<String> lineas) {
-        jdbcTemplate.batchUpdate(
-                "INSERT INTO datos_csv (linea) VALUES (?)",
+
+    public int insertarLineasSiNoExisten(List<String> lineas) {
+        final String sql = """
+        INSERT INTO datos_csv (linea)
+        SELECT ?
+        WHERE NOT EXISTS (SELECT 1 FROM datos_csv WHERE linea = ?)
+    """;
+
+        int[][] counts = jdbcTemplate.batchUpdate(
+                sql,
                 lineas,
                 100,
-                (ps, linea) -> ps.setString(1, linea)
+                (ps, linea) -> {
+                    ps.setString(1, linea);
+                    ps.setString(2, linea);
+                }
         );
+
+        int total = 0;
+        for (int[] lote : counts) {
+            for (int c : lote) total += c;
+        }
+        return total;
     }
+
 }
