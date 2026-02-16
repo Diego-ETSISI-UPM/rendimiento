@@ -13,14 +13,6 @@ public class ImportRepository {
     public ImportRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
-    public void crearTablaSiNoExiste() {
-        jdbcTemplate.execute("""
-            CREATE TABLE IF NOT EXISTS datos_csv (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                linea TEXT
-            )
-        """);
-    }
 
     public void crearTablaDesdeCabecera(List<String> columnas) {
 

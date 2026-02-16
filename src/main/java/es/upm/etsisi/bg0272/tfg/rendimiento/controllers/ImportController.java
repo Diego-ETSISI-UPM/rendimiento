@@ -15,18 +15,14 @@ import java.util.*;
 
 @Controller
 public class ImportController {
-
     private final ImportRepository repository;
-
     public ImportController(ImportRepository repository) {
         this.repository = repository;
     }
-
     @GetMapping("/importar")
-    public String importarPage() {
+    public String importar() {
         return "importar";
     }
-
     @PostMapping("/importar")
     public String ejecutarImportacion(@RequestParam("archivo") MultipartFile archivo, Model model) throws Exception {
         if (archivo.isEmpty()) {
@@ -45,22 +41,17 @@ public class ImportController {
                 return "importar";
             }
 
-            // Cabecera -> lista de columnas (split básico por ahora)
+            // Cabecera -> lista de columnas
             cabecera = parseCSVLine(linea);
 
-            // PASO 1: Crear la tabla con estas columnas
+            // 1) Crear la tabla con estas columnas
             repository.crearTablaDesdeCabecera(cabecera);
 
             model.addAttribute("mensaje",
                     "Tabla creada con " + cabecera.size() + " columnas.");
         }
 
-        // 1) verificar/crear tabla
-        //repository.crearTablaSiNoExiste();
-
-
-
-// 2) Leer CSV → construir columnasIncluidas (cabecera) y filas (datos estructurados)
+        // 2) Leer CSV → construir columnasIncluidas (cabecera) y filas (datos estructurados)
         List<String> columnasIncluidas = new ArrayList<>();
         List<Map<String, String>> filas = new ArrayList<>();
 
@@ -97,7 +88,7 @@ public class ImportController {
             }
         }
 
-// 3) Insertar filas si no existen
+        // 3) Insertar filas si no existen
         int insertadas = repository.insertarFilasSiNoExistenBatch(
                 filas,               // List<Map<String,String>>
                 columnasIncluidas,   // List<String>

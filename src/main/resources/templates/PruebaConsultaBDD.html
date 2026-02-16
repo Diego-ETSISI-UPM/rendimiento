@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
-  <head>
-    <meta charset="UTF-8">
-    <title>Acerca De</title>
-    <style>
+<head>
+  <meta charset="UTF-8">
+  <title>MySQLRendimientoTablaPrueba</title>
+  <style>
       body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
       header { margin-bottom: 1rem; }
       .row { display: flex; gap: 1rem; margin: 1rem 0; }
@@ -13,15 +13,39 @@
       th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
       th { background: #f7f7f7; }
     </style>
-  </head>
+</head>
 
-  <body>
-    <h1>Trabajo de Fin de Grado</h1>
-    <p>BG0272</p>
-    <img th:src="@{/images/logo_edit.jpg}" alt="Logo del portal" class="logo">
-    <ul>
-      <a th:href="@{/}"> volver</a>
-    </ul>
-  </body>
+<body>
+
+<h1>Prueba de consulta a BDD</h1>
+
+<tr>
+  <td>id2 = </td>
+  <td th:text="${mensaje}">Mensaje</td>
+</tr>
+
+
+<h2>Contenido de la tabla prueba</h2>
+
+<table>
+  <thead>
+  <tr>
+    <th>ID</th>
+    <th>Texto</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="fila : ${filas}">
+    <td th:text="${fila.id}">1</td>
+    <td th:text="${fila.texto}">Texto</td>
+  </tr>
+  </tbody>
+</table>
+
+<ul>
+  <a th:href="@{/}"> volver</a>
+</ul>
+
+</body>
 
 </html>
