@@ -11,105 +11,149 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.*;
 
 @Controller
 public class ImportController {
+
+    // Columnas que NO queremos incluir
+    private static final Set<String> columnasExcluidas = Set.of(
+            "Aprobados en 1ª Mat",
+            "Matriculados por 1ª vez",
+            "Rendimiento en 1ª Mat",
+            "Aprobados en 2ª Mat",
+            "Matriculados por 2ª vez",
+            "Rendimiento en 2ª Mat",
+            "Aprobados en 3ª Mat",
+            "Matriculados por 3ª vez o más",
+            "Rendimiento en 3ª Mat"
+    );
+
     private final ImportRepository repository;
+
     public ImportController(ImportRepository repository) {
         this.repository = repository;
     }
+
     @GetMapping("/importar")
     public String importar() {
         return "importar";
     }
+
     @PostMapping("/importar")
-    public String ejecutarImportacion(@RequestParam("archivo") MultipartFile archivo, Model model) throws Exception {
+    public String ejecutarImportacion(@RequestParam("archivo") MultipartFile archivo,
+                                      Model model) throws Exception {
+
         if (archivo.isEmpty()) {
             model.addAttribute("mensaje", "No se ha seleccionado ningún archivo");
             return "importar";
         }
 
-        List<String> cabecera = new ArrayList<>();
-
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(archivo.getInputStream(), StandardCharsets.UTF_8))) {
-
-            String linea = reader.readLine();
-            if (linea == null) {
-                model.addAttribute("mensaje", "El CSV está vacío");
-                return "importar";
-            }
-
-            // Cabecera -> lista de columnas
-            cabecera = parseCSVLine(linea);
-
-            // 1) Crear la tabla con estas columnas
-            repository.crearTablaDesdeCabecera(cabecera);
-
-            model.addAttribute("mensaje",
-                    "Tabla creada con " + cabecera.size() + " columnas.");
-        }
-
-        // 2) Leer CSV → construir columnasIncluidas (cabecera) y filas (datos estructurados)
-        List<String> columnasIncluidas = new ArrayList<>();
+        List<String> cabeceraOriginal;
+        List<String> cabeceraFiltrada;
+        LinkedHashMap<String, String> headerMap;
+        List<String> columnasNormalizadas;
         List<Map<String, String>> filas = new ArrayList<>();
 
+        // --- 1) Leer cabecera, filtrar y normalizar nombres ---
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(archivo.getInputStream(), StandardCharsets.UTF_8))) {
 
-            // Leer cabecera
             String headerLine = reader.readLine();
             if (headerLine == null) {
                 model.addAttribute("mensaje", "El CSV está vacío");
                 return "importar";
             }
 
-            columnasIncluidas = parseCSVLine(headerLine);  // List<String>
+            cabeceraOriginal = parseCSVLine(headerLine);
 
-            // Crear tabla según cabecera
-            repository.crearTablaDesdeCabecera(columnasIncluidas);
+            // Filtrar columnas redundantes
+            cabeceraFiltrada = cabeceraOriginal.stream()
+                    .filter(col -> !columnasExcluidas.contains(col.trim()))
+                    .toList();
 
-            // Leer filas
+            // Construir mapping original → normalizado
+            headerMap = buildHeaderMappingPreservingOrder(cabeceraFiltrada);
+
+            // Lista de columnas normalizadas
+            columnasNormalizadas = new ArrayList<>(headerMap.values());
+
+            // Crear tabla basada en columnas normalizadas
+            repository.crearTablaDesdeCabecera(columnasNormalizadas);
+
+            // --- Leer filas ---
             String linea;
             while ((linea = reader.readLine()) != null) {
                 if (linea.isBlank()) continue;
 
                 List<String> valores = parseCSVLine(linea);
-
-                // Fila estructurada y en orden
                 Map<String, String> fila = new LinkedHashMap<>();
 
-                for (int i = 0; i < Math.min(valores.size(), columnasIncluidas.size()); i++) {
-                    fila.put(columnasIncluidas.get(i), valores.get(i));
+                for (int i = 0; i < Math.min(valores.size(), cabeceraOriginal.size()); i++) {
+                    String colOrig = cabeceraOriginal.get(i).trim();
+                    if (!headerMap.containsKey(colOrig)) continue;
+
+                    String colNorm = headerMap.get(colOrig);
+                    fila.put(colNorm, valores.get(i));
                 }
 
-                filas.add(fila); // List<Map<String,String>>
+                filas.add(fila);
             }
         }
 
-        // 3) Insertar filas si no existen
+        // --- 3) Insertar ---
         int insertadas = repository.insertarFilasSiNoExistenBatch(
-                filas,               // List<Map<String,String>>
-                columnasIncluidas,   // List<String>
-                200                  // batch size
+                filas,
+                columnasNormalizadas,
+                200
         );
 
         int candidatas = filas.size();
         int omitidas = candidatas - insertadas;
 
-        model.addAttribute(
-                "mensaje",
+        model.addAttribute("mensaje",
                 "Importación realizada. Candidatas: " + candidatas +
                         ", insertadas nuevas: " + insertadas +
-                        ", ya existentes (omitidas): " + omitidas
-        );
-
+                        ", ya existentes: " + omitidas);
 
         return "importar";
     }
 
-    // Parser
+
+    // Normalizar nombres de columna
+    private static String normalizeHeader(String raw) {
+        if (raw == null) return "";
+
+        String s = raw.trim();
+        s = Normalizer.normalize(s, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", ""); // quitar tildes
+        s = s.toLowerCase(Locale.ROOT);
+        s = s.replaceAll("[\\s\\-–—]+", "_");
+        s = s.replaceAll("[^a-z0-9_]", "");
+        s = s.replaceAll("_+", "_").replaceAll("^_+|_+$", "");
+        if (s.isEmpty()) s = "columna";
+
+        return s;
+    }
+
+    // Resolver colisiones y mantener orden
+    private static LinkedHashMap<String, String> buildHeaderMappingPreservingOrder(List<String> cabeceraOriginal) {
+        LinkedHashMap<String, String> mapping = new LinkedHashMap<>();
+        Map<String, Integer> seen = new HashMap<>();
+
+        for (String raw : cabeceraOriginal) {
+            String base = normalizeHeader(raw);
+            int n = seen.getOrDefault(base, 0) + 1;
+            seen.put(base, n);
+
+            String normalized = (n == 1) ? base : base + "__" + n;
+            mapping.put(raw.trim(), normalized);
+        }
+        return mapping;
+    }
+
+    // Parser CSV
     private static List<String> parseCSVLine(String line) {
         List<String> out = new ArrayList<>();
         if (line == null) return out;

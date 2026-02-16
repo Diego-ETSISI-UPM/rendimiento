@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Repository
@@ -16,22 +17,37 @@ public class ImportRepository {
 
     public void crearTablaDesdeCabecera(List<String> columnas) {
 
-        // Construimos cada columna como VARCHAR(255)
+        // Columnas que NO queremos incluir en la tabla
+        Set<String> columnasExcluidas = Set.of(
+                "Aprobados en 1ª Mat",
+                "Matriculados por 1ª vez",
+                "Rendimiento en 1ª Mat",
+                "Aprobados en 2ª Mat",
+                "Matriculados por 2ª vez",
+                "Rendimiento en 2ª Mat",
+                "Aprobados en 3ª Mat",
+                "Matriculados por 3ª vez o más",
+                "Rendimiento en 3ª Mat"
+        );
+
         StringBuilder sb = new StringBuilder();
-        sb.append("CREATE TABLE IF NOT EXISTS `").append("datos_csv").append("` (\n");
-        sb.append("  `id` INT AUTO_INCREMENT PRIMARY KEY,\n");
+        sb.append("CREATE TABLE IF NOT EXISTS `datos_csv` (\n");
+        sb.append("  `id` INT AUTO_INCREMENT PRIMARY KEY");
 
-        for (int i = 0; i < columnas.size(); i++) {
-            String col = columnas.get(i);
+        // Añadimos una coma solo si hay columnas válidas
+        boolean primera = true;
 
-            // Backticks para permitir espacios y tildes
-            sb.append("  `").append(col).append("` VARCHAR(255)");
+        for (String col : columnas) {
 
-            if (i < columnas.size() - 1) sb.append(",");
-            sb.append("\n");
+            // saltar columnas redundantes
+            if (columnasExcluidas.contains(col.trim())) {
+                continue;
+            }
+
+            sb.append(",\n  `").append(col).append("` VARCHAR(255)");
         }
 
-        sb.append(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        sb.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         jdbcTemplate.execute(sb.toString());
     }
