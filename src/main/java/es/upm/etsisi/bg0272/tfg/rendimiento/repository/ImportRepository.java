@@ -3,81 +3,85 @@ package es.upm.etsisi.bg0272.tfg.rendimiento.repository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.sql.Types;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
 public class ImportRepository {
+
     private final JdbcTemplate jdbcTemplate;
+
     public ImportRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public void crearTablaDesdeCabecera(List<String> columnas) {
+    // === Declaración de columnas numéricas (normalizadas) ===
+    private static final Set<String> NUMERIC_DECIMAL_0 = Set.of(
+            "numero_de_matriculas",
+            "n_matriculados",
+            "n_aprobados",
+            "curso"
 
-        /*/ Columnas que NO queremos incluir en la tabla
-        Set<String> columnasExcluidas = Set.of(
-                "Aprobados en 1ª Mat",
-                "Matriculados por 1ª vez",
-                "Rendimiento en 1ª Mat",
-                "Aprobados en 2ª Mat",
-                "Matriculados por 2ª vez",
-                "Rendimiento en 2ª Mat",
-                "Aprobados en 3ª Mat",
-                "Matriculados por 3ª vez o más",
-                "Rendimiento en 3ª Mat"
-        );*/
+    );
+    private static final Set<String> NUMERIC_DECIMAL_8 = Set.of(
+            "rendimiento",
+            "eficiencia_en_matricula"
+    );
+    private static final Map<String, String> COLUMN_TYPES;
+    static {
+        Map<String, String> m = new HashMap<>();
+        NUMERIC_DECIMAL_0.forEach(c -> m.put(c, "DECIMAL(10,0)"));
+        NUMERIC_DECIMAL_8.forEach(c -> m.put(c, "DECIMAL(18,8)"));
+        COLUMN_TYPES = Collections.unmodifiableMap(m);
+    }
+
+    // === Creación de tabla con clave primaria compuesta ===
+    public void crearTablaDesdeCabecera(List<String> columnas) {
 
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE IF NOT EXISTS `datos_csv` (\n");
-        sb.append("  `id` INT AUTO_INCREMENT PRIMARY KEY");
 
-        // Añadimos una coma solo si hay columnas válidas
-        boolean primera = true;
+        boolean first = true;
 
         for (String col : columnas) {
-
-            /*/ saltar columnas redundantes
-            if (columnasExcluidas.contains(col.trim())) {
-                continue;
-            }*/
-
-            sb.append(",\n  `").append(col).append("` VARCHAR(255)");
+            String tipo = COLUMN_TYPES.getOrDefault(col, "VARCHAR(255)");
+            if (!first) sb.append(",\n");
+            first = false;
+            sb.append("  `").append(col).append("` ").append(tipo);
         }
 
-        sb.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // PRIMARY KEY compuesta
+        sb.append(",\n  PRIMARY KEY (`ano_academico`, `numero_de_matriculas`, `asignatura`)");
+        sb.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
         jdbcTemplate.execute(sb.toString());
     }
 
-    public int insertarFilasSiNoExistenBatch(List<Map<String, String>> filas, List<String> columnasIncluidas, int batchSize) {
+    // === Inserción con ON DUPLICATE KEY UPDATE ===
+    public int insertarFilasSiNoExistenBatch(
+            List<Map<String, String>> filas,
+            List<String> columnasIncluidas,
+            int batchSize) {
 
-        if (filas == null || filas.isEmpty() || columnasIncluidas == null || columnasIncluidas.isEmpty()) {
-            return 0;
-        }
+        if (filas == null || filas.isEmpty()) return 0;
 
         String columnasSQL = columnasIncluidas.stream()
                 .map(c -> "`" + c + "`")
                 .collect(Collectors.joining(", "));
 
-        String placeholders = columnasIncluidas.stream()
+        String placeholdersSQL = columnasIncluidas.stream()
                 .map(c -> "?")
                 .collect(Collectors.joining(", "));
 
-        String where = columnasIncluidas.stream()
-                .map(c -> "`" + c + "` = ?")
-                .collect(Collectors.joining(" AND "));
+        String updateSQL = columnasIncluidas.stream()
+                .filter(c -> !Set.of("ano_academico", "numero_de_matriculas", "asignatura").contains(c))
+                .map(c -> "`" + c + "` = VALUES(`" + c + "`)")
+                .collect(Collectors.joining(", "));
 
-        String sql = """
-        INSERT INTO `datos_csv` (%s)
-        SELECT %s
-        WHERE NOT EXISTS (
-            SELECT 1 FROM `datos_csv`
-            WHERE %s
-        )
-        """.formatted(columnasSQL, placeholders, where);
+        String sql = "INSERT INTO `datos_csv` (" + columnasSQL + ") VALUES (" + placeholdersSQL + ")\n"
+                + "ON DUPLICATE KEY UPDATE " + updateSQL;
 
         int[][] counts = jdbcTemplate.batchUpdate(
                 sql,
@@ -85,23 +89,26 @@ public class ImportRepository {
                 batchSize,
                 (ps, fila) -> {
                     int idx = 1;
-                    // SELECT ?
-                    for (String c : columnasIncluidas) {
-                        ps.setString(idx++, fila.get(c));
-                    }
-                    // WHERE ?
-                    for (String c : columnasIncluidas) {
-                        ps.setString(idx++, fila.get(c));
+                    for (String col : columnasIncluidas) {
+                        String raw = fila.get(col);
+                        if (COLUMN_TYPES.containsKey(col)) {
+                            if (raw == null || raw.isBlank()) {
+                                ps.setNull(idx++, Types.DECIMAL);
+                            } else {
+                                ps.setBigDecimal(idx++, new BigDecimal(raw.replace(",", ".")));
+                            }
+                        } else {
+                            ps.setString(idx++, raw);
+                        }
                     }
                 }
         );
 
-        // Sumar filas realmente insertadas (MySQL devuelve 1 cuando inserta, 0 si NOT EXISTS bloquea)
         int total = 0;
-        for (int[] lote : counts) {
-            for (int c : lote) total += c;
-        }
+        for (int[] lote : counts)
+            for (int c : lote)
+                total += (c >= 0 ? 1 : 0);
+
         return total;
     }
-
 }
