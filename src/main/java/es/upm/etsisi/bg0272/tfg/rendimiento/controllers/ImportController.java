@@ -42,8 +42,7 @@ public class ImportController {
     }
 
     @PostMapping("/importar")
-    public String ejecutarImportacion(@RequestParam("archivo") MultipartFile archivo,
-                                      Model model) throws Exception {
+    public String ejecutarImportacion(@RequestParam("archivo") MultipartFile archivo, Model model) throws Exception {
 
         if (archivo.isEmpty()) {
             model.addAttribute("mensaje", "No se ha seleccionado ningún archivo");
@@ -56,7 +55,7 @@ public class ImportController {
         List<String> columnasNormalizadas;
         List<Map<String, String>> filas = new ArrayList<>();
 
-        // --- 1) Leer cabecera, filtrar y normalizar nombres ---
+        // 1) LEER CABECERA, FILTRAR columnasExcluidas, NORMALIZAR NOMBRES + LEER FILAS
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(archivo.getInputStream(), StandardCharsets.UTF_8))) {
 
@@ -68,21 +67,18 @@ public class ImportController {
 
             cabeceraOriginal = parseCSVLine(headerLine);
 
-            // Filtrar columnas redundantes
-            cabeceraFiltrada = cabeceraOriginal.stream()
-                    .filter(col -> !columnasExcluidas.contains(col.trim()))
-                    .toList();
+            // FILTRAR columnasExcluidas
+            cabeceraFiltrada = cabeceraOriginal.stream().filter(col -> !columnasExcluidas.contains(col.trim())).toList();
 
-            // Construir mapping original → normalizado
+            // CONSTRUIR CABECERA NORMALIADA
             headerMap = buildHeaderMappingPreservingOrder(cabeceraFiltrada);
-
             // Lista de columnas normalizadas
             columnasNormalizadas = new ArrayList<>(headerMap.values());
 
-            // Crear tabla basada en columnas normalizadas
+            // CREAR TABLA SEGÚN columnasExcluidas
             repository.crearTablaDesdeCabecera(columnasNormalizadas);
 
-            // --- Leer filas ---
+            // LEER FILAS filas.add(fila);
             String linea;
             while ((linea = reader.readLine()) != null) {
                 if (linea.isBlank()) continue;
@@ -102,12 +98,8 @@ public class ImportController {
             }
         }
 
-        // --- 3) Insertar ---
-        int insertadas = repository.insertarFilasSiNoExistenBatch(
-                filas,
-                columnasNormalizadas,
-                200
-        );
+        // 2) INSERTAR repository.insertarFilasSiNoExistenBatch
+        int insertadas = repository.insertarFilasSiNoExistenBatch(filas, columnasNormalizadas, 200);
 
         int candidatas = filas.size();
         int omitidas = candidatas - insertadas;
@@ -119,7 +111,6 @@ public class ImportController {
 
         return "importar";
     }
-
 
     // Normalizar nombres de columna
     private static String normalizeHeader(String raw) {
@@ -139,6 +130,7 @@ public class ImportController {
 
     // Resolver colisiones y mantener orden
     private static LinkedHashMap<String, String> buildHeaderMappingPreservingOrder(List<String> cabeceraOriginal) {
+
         LinkedHashMap<String, String> mapping = new LinkedHashMap<>();
         Map<String, Integer> seen = new HashMap<>();
 

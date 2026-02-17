@@ -17,7 +17,7 @@ public class ImportRepository {
 
     public void crearTablaDesdeCabecera(List<String> columnas) {
 
-        // Columnas que NO queremos incluir en la tabla
+        /*/ Columnas que NO queremos incluir en la tabla
         Set<String> columnasExcluidas = Set.of(
                 "Aprobados en 1ª Mat",
                 "Matriculados por 1ª vez",
@@ -28,7 +28,7 @@ public class ImportRepository {
                 "Aprobados en 3ª Mat",
                 "Matriculados por 3ª vez o más",
                 "Rendimiento en 3ª Mat"
-        );
+        );*/
 
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE IF NOT EXISTS `datos_csv` (\n");
@@ -39,10 +39,10 @@ public class ImportRepository {
 
         for (String col : columnas) {
 
-            // saltar columnas redundantes
+            /*/ saltar columnas redundantes
             if (columnasExcluidas.contains(col.trim())) {
                 continue;
-            }
+            }*/
 
             sb.append(",\n  `").append(col).append("` VARCHAR(255)");
         }
@@ -52,10 +52,7 @@ public class ImportRepository {
         jdbcTemplate.execute(sb.toString());
     }
 
-    public int insertarFilasSiNoExistenBatch(
-            List<Map<String, String>> filas,
-            List<String> columnasIncluidas,
-            int batchSize) {
+    public int insertarFilasSiNoExistenBatch(List<Map<String, String>> filas, List<String> columnasIncluidas, int batchSize) {
 
         if (filas == null || filas.isEmpty() || columnasIncluidas == null || columnasIncluidas.isEmpty()) {
             return 0;
