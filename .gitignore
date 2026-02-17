@@ -7,6 +7,8 @@ target/
 .mvn/wrapper/
 !**/src/main/**/target/
 !**/src/test/**/target/
+out/
+src/main/resources/META-INF/
 
 ### STS ###
 .apt_generated
