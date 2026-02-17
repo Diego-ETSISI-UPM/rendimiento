@@ -5,18 +5,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 @Repository
-public class InterfazRepository {
+public class PruebaConsultaRepository {
     private final JdbcTemplate jdbcTemplate;
-    public InterfazRepository(JdbcTemplate jdbcTemplate) {
+    public PruebaConsultaRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
     public String obtenerTexto() {
-        return jdbcTemplate.queryForObject(
-                "SELECT texto FROM prueba WHERE id = 1",
-                String.class
-        );
-    }
-    public String obtenerTexto2() {
         return jdbcTemplate.queryForObject(
                 "SELECT texto FROM prueba WHERE id = 2",
                 String.class
