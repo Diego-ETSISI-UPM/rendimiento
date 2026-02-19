@@ -23,9 +23,8 @@ public class ImportRepository {
             "n_matriculados",
             "n_aprobados",
             "curso"
-
     );
-    private static final Set<String> NUMERIC_DECIMAL_8 = Set.of(
+    private static final Set<String> NUMERIC_DECIMAL_2 = Set.of(
             "rendimiento",
             "eficiencia_en_matricula"
     );
@@ -33,7 +32,7 @@ public class ImportRepository {
     static {
         Map<String, String> m = new HashMap<>();
         NUMERIC_DECIMAL_0.forEach(c -> m.put(c, "DECIMAL(10,0)"));
-        NUMERIC_DECIMAL_8.forEach(c -> m.put(c, "DECIMAL(18,8)"));
+        NUMERIC_DECIMAL_2.forEach(c -> m.put(c, "DECIMAL(18,2)"));
         COLUMN_TYPES = Collections.unmodifiableMap(m);
     }
 
