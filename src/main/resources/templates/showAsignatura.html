@@ -88,6 +88,26 @@
       <button type="submit" style="margin-top:1rem;">Ver evolución</button>
     </form>
 
+    <div th:if="${mensaje != null}"
+         style="margin:.75rem 0; padding:.5rem .75rem; background:#fff7e6; border:1px solid #ffd591;">
+      <span th:text="${mensaje}"></span>
+    </div>
+
+    <!-- Lista de sugerencias para desambiguar en el servidor -->
+    <div th:if="${coincidencias != null}">
+      <ul style="list-style: none; padding-left: 0;">
+        <li th:each="c : ${coincidencias}" style="margin: .25rem 0;">
+          <!-- Al hacer clic, reenviamos la elegida por POST con un form oculto -->
+          <form th:action="@{/showAsignatura}" method="post" style="display:inline;">
+            <input type="hidden" name="asignatura" th:value="${c}"/>
+            <button type="submit" style="background:none; border:none; color:#1677ff; cursor:pointer; padding:0;">
+              <span th:text="${c}"></span>
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div>
+
     <div th:if="${evolucion != null}">
     <h2 th:text="'Asignatura: ' + ${seleccionada}"></h2>
 

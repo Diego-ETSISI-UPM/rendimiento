@@ -26,10 +26,37 @@ public class ShowAsignaturaController {
     }
 
     @PostMapping("/showAsignatura")
-    public String mostrarEvolucion(@RequestParam("asignatura") String asignatura, Model model) {
+    public String mostrarEvolucion(@RequestParam("asignatura") String input, Model model) {
+
+        String consultaUsuario = input == null ? "" : input.trim();
+
+        if (repo.existeAsignaturaExacta(consultaUsuario)) {
+            return renderEvolucion(consultaUsuario, model);
+        }
+
+        var coincidencias = repo.buscarAsignaturas(consultaUsuario);
+
+        if (coincidencias.isEmpty()) {
+            model.addAttribute("mensaje", "No se encontraron asignaturas que contengan: \"" + consultaUsuario + "\"");
+            // Devolvemos la página vacía pero con mensaje y el valor tecleado
+            model.addAttribute("seleccionada", consultaUsuario);
+            return "showAsignatura";
+        }
+
+        if (coincidencias.size() == 1) {
+            String asignatura = coincidencias.get(0);
+            return renderEvolucion(asignatura, model);
+        }
+
+        model.addAttribute("coincidencias", coincidencias);
+        model.addAttribute("seleccionada", consultaUsuario);
+        model.addAttribute("mensaje", "Hay varias asignaturas que coinciden. Elige una de la lista.");
+        return "showAsignatura";
+    }
+
+    private String renderEvolucion(String asignatura, Model model) {
         var datos = repo.obtenerEvolucion(asignatura);
 
-        // Arrays para Chart.js (si los usas)
         List<String> labels = new ArrayList<>();
         List<BigDecimal> rendimientos = new ArrayList<>();
         for (var fila : datos) {
@@ -45,11 +72,9 @@ public class ShowAsignaturaController {
         return "showAsignatura";
     }
 
-    // ---- REST (autocompletado) ----
     @GetMapping(value = "/api/asignaturas/buscar", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public List<String> buscarAsignaturas(@RequestParam("q") String q) {
-        // Delegamos en el repositorio (LIKE %q%, LIMIT 20)
         return repo.buscarAsignaturas(q);
     }
 }

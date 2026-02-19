@@ -20,24 +20,23 @@ public class ShowAsignaturaRepository {
         String sql = "SELECT DISTINCT asignatura FROM datos_csv ORDER BY asignatura";
         var lista = jdbc.queryForList(sql, String.class);
         System.out.println("[DEBUG] Asignaturas disponibles: " + lista.size());
-        return jdbc.queryForList(sql, String.class);
+        return lista;
     }
 
     public List<Map<String, Object>> obtenerEvolucion(String asignatura) {
-
         String sql = """
             SELECT 
                 ano_academico,
-                SUM(n_matriculados) AS total_matriculados,
-                SUM(n_aprobados) AS total_aprobados,
+                SUM(COALESCE(n_matriculados, 0)) AS total_matriculados,
+                SUM(COALESCE(n_aprobados,   0)) AS total_aprobados,
                 CASE 
-                    WHEN SUM(n_matriculados) = 0 THEN 0
-                    ELSE ROUND(SUM(n_aprobados) / SUM(n_matriculados) * 100, 2)
+                    WHEN SUM(COALESCE(n_matriculados, 0)) = 0 THEN 0
+                    ELSE ROUND(SUM(COALESCE(n_aprobados, 0)) / SUM(COALESCE(n_matriculados, 0)) * 100, 2)
                 END AS rendimiento_real
             FROM datos_csv
             WHERE asignatura = ?
             GROUP BY ano_academico
-            ORDER BY ano_academico
+            ORDER BY CAST(SUBSTRING(ano_academico, 1, 4) AS UNSIGNED)
         """;
 
         return jdbc.query(
@@ -51,22 +50,26 @@ public class ShowAsignaturaRepository {
                     fila.put("rendimiento", rs.getBigDecimal("rendimiento_real"));
                     return fila;
                 }
-
         );
+    }
+
+    public boolean existeAsignaturaExacta(String nombre) {
+        Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM datos_csv WHERE asignatura = ?",
+                Integer.class,
+                nombre
+        );
+        return count != null && count > 0;
     }
 
     public List<String> buscarAsignaturas(String q) {
         String sql = """
-        SELECT asignatura 
-        FROM datos_csv
-        WHERE asignatura LIKE CONCAT('%', ?, '%')
-        GROUP BY asignatura
-        ORDER BY asignatura
-        LIMIT 20
-    """;
-
+            SELECT asignatura 
+            FROM datos_csv
+            WHERE asignatura LIKE CONCAT('%', ?, '%')
+            GROUP BY asignatura
+            ORDER BY asignatura            
+        """;
         return jdbc.queryForList(sql, String.class, q);
     }
-
-
 }
