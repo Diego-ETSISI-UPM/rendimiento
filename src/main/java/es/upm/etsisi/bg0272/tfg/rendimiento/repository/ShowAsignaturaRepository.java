@@ -55,4 +55,18 @@ public class ShowAsignaturaRepository {
         );
     }
 
+    public List<String> buscarAsignaturas(String q) {
+        String sql = """
+        SELECT asignatura 
+        FROM datos_csv
+        WHERE asignatura LIKE CONCAT('%', ?, '%')
+        GROUP BY asignatura
+        ORDER BY asignatura
+        LIMIT 20
+    """;
+
+        return jdbc.queryForList(sql, String.class, q);
+    }
+
+
 }

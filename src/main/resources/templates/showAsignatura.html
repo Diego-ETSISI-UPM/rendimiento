@@ -4,17 +4,63 @@
     <meta charset="UTF-8">
     <title>Evolución de asignatura</title>
       <meta charset="UTF-8">
-      <title>Acerca De</title>
-      <style>
-        body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
-        header { margin-bottom: 1rem; }
-        .row { display: flex; gap: 1rem; margin: 1rem 0; }
-        .card { border: 1px solid #ddd; padding: 1rem; border-radius: .5rem; min-width: 180px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-        th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
-        th { background: #f7f7f7; }
-      </style>
-    </head>
+    <title>Acerca De</title>
+    <style>
+       body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+       header { margin-bottom: 1rem; }
+       .row { display: flex; gap: 1rem; margin: 1rem 0; }
+       .card { border: 1px solid #ddd; padding: 1rem; border-radius: .5rem; min-width: 180px; }
+       table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+       th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
+       th { background: #f7f7f7; }
+     </style>
+  </head>
+
+  <script>
+    const input = document.getElementById("buscador");
+    const lista = document.getElementById("sugerencias");
+
+    input.addEventListener("input", async () => {
+        const q = input.value.trim();
+        if (q.length < 2) {
+            lista.style.display = "none";
+            return;
+        }
+
+        const resp = await fetch(`/api/asignaturas/buscar?q=${encodeURIComponent(q)}`);
+        const datos = await resp.json();
+
+        lista.innerHTML = "";
+        if (datos.length === 0) {
+            lista.style.display = "none";
+            return;
+        }
+
+        datos.forEach(asig => {
+            const li = document.createElement("li");
+            li.textContent = asig;
+            li.style.padding = "6px";
+            li.style.cursor = "pointer";
+
+            li.addEventListener("click", () => {
+                input.value = asig;
+                lista.style.display = "none";
+            });
+
+            li.addEventListener("mouseover", () => li.style.background = "#ddd");
+            li.addEventListener("mouseout", () => li.style.background = "white");
+
+            lista.appendChild(li);
+        });
+
+        lista.style.display = "block";
+    });
+
+    // Ocultar la lista al hacer clic fuera
+    document.addEventListener("click", (e) => {
+       if (e.target !== input) lista.style.display = "none";
+    });
+   </script>
 
   <body>
 
@@ -24,15 +70,22 @@
     </ul>
 
     <form th:action="@{/showAsignatura}" method="post">
-      <label>Selecciona una asignatura: </label>
-      <select name="asignatura">
-        <option th:each="a : ${asignaturas}"
-                th:value="${a}"
-                th:selected="${a == seleccionada}"
-                th:text="${a}">
-        </option>
-      </select>
-      <button type="submit">Ver evolución</button>
+      <label>Buscar asignatura:</label>
+      <input type="text" id="buscador" name="asignatura" autocomplete="off" style="width:350px;" />
+
+      <ul id="sugerencias"
+          style="border:1px solid #ccc;
+               width:350px;
+               list-style:none;
+               padding-left:0;
+               margin-top:0;
+               position:absolute;
+               background:white;
+               z-index:10;
+               display:none;">
+      </ul>
+
+      <button type="submit" style="margin-top:1rem;">Ver evolución</button>
     </form>
 
     <div th:if="${evolucion != null}">
