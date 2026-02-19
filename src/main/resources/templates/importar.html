@@ -17,6 +17,9 @@
   <body>
 
     <h1>Importación de datos académicos</h1>
+    <ul>
+      <a th:href="@{/}"> volver</a>
+    </ul>
 
     <form th:action="@{/importar}" method="post" enctype="multipart/form-data">
       <input type="file" name="archivo" accept=".csv" required />
@@ -25,10 +28,6 @@
     </form>
 
     <p th:if="${mensaje}" th:text="${mensaje}"></p>
-
-    <ul>
-      <a th:href="@{/}"> volver</a>
-    </ul>
 
   </body>
 </html>

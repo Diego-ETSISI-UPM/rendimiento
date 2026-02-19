@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+  <html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8">
+    <title>Contenido datos_csv</title>
+    <style>
+          body { font-family: system-ui, Arial; margin: 2rem; }
+          pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; }
+          .alert { padding: 10px; border-radius: 4px; margin-bottom: 1rem; }
+          .alert-error { background: #ffe5e5; color:#900; }
+          .alert-warn { background: #fff7e6; color:#a66; }
+    </style>
+  </head>
+
+
+  <body>
+
+    <h1>Contenido de datos_csv</h1>
+    <ul>
+      <a th:href="@{/}"> volver</a>
+    </ul>
+
+    <div th:if="${estado == 'no_tabla'}" class="alert alert-error">
+      La tabla <b>datos_csv</b> no existe.
+    </div>
+
+    <div th:if="${estado == 'vacia'}" class="alert alert-warn">
+      La tabla <b>datos_csv</b> está vacía.
+    </div>
+
+    <div th:if="${estado == 'ok'}">
+
+      <table>
+        <thead>
+        <tr>
+          <th th:each="cab : ${cabeceras}" th:text="${cab}"></th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="fila : ${lineas}">
+          <td th:each="valor : ${fila.values()}"
+              th:text="${valor}"></td>
+        </tr>
+        </tbody>
+      </table>
+
+    </div>
+
+  </body>
+</html>

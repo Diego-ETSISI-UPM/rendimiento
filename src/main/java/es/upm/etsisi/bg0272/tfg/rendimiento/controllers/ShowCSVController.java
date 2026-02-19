@@ -19,19 +19,20 @@ public class ShowCSVController {
 
         if (!repository.tablaExiste()) {
             model.addAttribute("estado", "no_tabla");
-            return "ShowCSV";
+            return "showCSV";
         }
 
         var lineas = repository.obtenerLineas();
 
         if (lineas.isEmpty()) {
             model.addAttribute("estado", "vacia");
-            return "ShowCSV";
+            return "showCSV";
         }
 
         model.addAttribute("estado", "ok");
+        model.addAttribute("cabeceras", repository.obtenerCabeceras());
         model.addAttribute("lineas", lineas);
 
-        return "ShowCSV";
+        return "showCSV";
     }
 }

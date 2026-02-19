@@ -3,7 +3,10 @@ package es.upm.etsisi.bg0272.tfg.rendimiento.repository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Repository
 public class ShowCSVRepository {
@@ -26,20 +29,31 @@ public class ShowCSVRepository {
     }
 
     // Devuelve cada fila como una línea de texto (concatenada)
-    public List<String> obtenerLineas() {
+    public List<Map<String, Object>> obtenerLineas() {
         return jdbcTemplate.query(
                 "SELECT * FROM datos_csv",
                 (rs, rowNum) -> {
+                    Map<String, Object> fila = new LinkedHashMap<>();
                     int colCount = rs.getMetaData().getColumnCount();
-                    StringBuilder sb = new StringBuilder();
-
                     for (int i = 1; i <= colCount; i++) {
-                        if (i > 1) sb.append(" | ");
-                        sb.append(rs.getMetaData().getColumnName(i))
-                                .append("=")
-                                .append(rs.getString(i));
+                        String colName = rs.getMetaData().getColumnName(i);
+                        fila.put(colName, rs.getObject(i));
                     }
-                    return sb.toString();
+                    return fila;
+                }
+        );
+    }
+
+    public List<String> obtenerCabeceras() {
+        return jdbcTemplate.query(
+                "SELECT * FROM datos_csv LIMIT 1",
+                rs -> {
+                    List<String> cabeceras = new ArrayList<>();
+                    int colCount = rs.getMetaData().getColumnCount();
+                    for (int i = 1; i <= colCount; i++) {
+                        cabeceras.add(rs.getMetaData().getColumnName(i));
+                    }
+                    return cabeceras;
                 }
         );
     }
