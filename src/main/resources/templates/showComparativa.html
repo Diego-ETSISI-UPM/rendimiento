@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Comparativa de asignaturas</title>
+
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+    .chip  {
+      background:#f0f7ff;
+      border:1px solid #b7d5ff;
+      padding:.25rem .5rem;
+      border-radius:16px;
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+    }
+    .chip button {
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      color:#1677ff;
+      font-size:14px;
+    }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td {
+      border: 1px solid #e3e3e3;
+      padding: .5rem .75rem;
+      text-align: left;
+    }
+    th { background: #f7f7f7; }
+
+  </style>
+</head>
+
+<body>
+
+<h1>Comparativa de rendimiento entre asignaturas</h1>
+<p><a th:href="@{/}">volver</a></p>
+
+<!-- ====================== FORMULARIO REAL ====================== -->
+<form th:action="@{/showComparativa}" method="post">
+
+  <label>Buscar asignaturas:</label>
+  <input type="text" id="buscador" autocomplete="off" style="width:350px;" />
+
+  <ul id="sugerencias"
+      style="border:1px solid #ccc;
+             width:650px;
+             list-style:none;
+             padding-left:0;
+             margin-top:0;
+             position:absolute;
+             background:white;
+             z-index:10;
+             display:none;">
+  </ul>
+
+  <!-- zona chips -->
+  <div class="chips" id="chips"></div>
+
+  <!-- inputs ocultos enviados al POST -->
+  <div id="hiddenInputs"></div>
+
+  <button type="submit" style="margin-top:1rem;">Comparar</button>
+
+</form>
+<!-- ==================== FIN FORMULARIO ======================== -->
+
+<!-- Mensajes -->
+<div th:if="${mensaje != null}"
+     style="margin:.75rem 0; padding:.5rem .75rem; background:#fff7e6; border:1px solid #ffd591;">
+  <span th:text="${mensaje}"></span>
+</div>
+
+<!-- RESULTADOS -->
+<div th:if="${resultados != null}">
+  <h3 style="margin-top:1rem;">Rendimiento histórico (orden ascendente)</h3>
+
+  <div style="height:360px; margin:.5rem 0 1rem;">
+    <canvas id="barRank"></canvas>
+  </div>
+
+  <table>
+    <thead>
+    <tr>
+      <th>Asignatura</th>
+      <th>Total Matriculados</th>
+      <th>Total Aprobados</th>
+      <th>Rendimiento (%)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="fila : ${resultados}">
+      <td th:text="${fila.asignatura}"></td>
+      <td th:text="${fila.matriculados}"></td>
+      <td th:text="${fila.aprobados}"></td>
+      <td th:text="${fila.rendimiento}"></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ================== SCRIPTS ================== -->
+
+<!-- Chart.js CORRECTO -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Autocompletado + chips -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  const input  = document.getElementById('buscador');
+  const lista  = document.getElementById('sugerencias');
+  const chips  = document.getElementById('chips');
+  const hidden = document.getElementById('hiddenInputs');
+
+  const seleccion = new Set();
+
+  // Genera inputs ocultos
+  function renderHiddenInputs() {
+    hidden.innerHTML = '';
+    seleccion.forEach(v => {
+      const h = document.createElement('input');
+      h.type  = 'hidden';
+      h.name  = 'asignaturas';
+      h.value = v;
+      hidden.appendChild(h);
+    });
+  }
+
+  function addChip(texto) {
+    if (seleccion.has(texto)) return;
+
+    seleccion.add(texto);
+
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `<span>${texto}</span>`;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '✕';
+    btn.title = 'Quitar';
+    btn.onclick = () => {
+      chips.removeChild(chip);
+      seleccion.delete(texto);
+      renderHiddenInputs();
+    };
+
+    chip.appendChild(btn);
+    chips.appendChild(chip);
+    renderHiddenInputs();
+  }
+
+  // Autocompletado AJAX
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { lista.style.display='none'; return; }
+
+    timer = setTimeout(async () => {
+
+      const resp = await fetch(`/api/asignaturas/buscar?q=${encodeURIComponent(q)}`);
+      const datos = await resp.json();
+
+      lista.innerHTML = '';
+      if (!datos.length) { lista.style.display='none'; return; }
+
+      datos.forEach(asig => {
+        const li = document.createElement('li');
+        li.textContent = asig;
+        li.onmouseover = () => li.style.background = '#ddd';
+        li.onmouseout  = () => li.style.background = 'white';
+        li.onclick = () => {
+          addChip(asig);
+          lista.style.display = 'none';
+          input.value = '';
+          input.focus();
+        };
+        lista.appendChild(li);
+      });
+
+      lista.style.display = 'block';
+    }, 250);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.target !== input) lista.style.display = 'none';
+  });
+
+});
+</script>
+
+<!-- Gráfico -->
+<script th:inline="javascript">
+/*<![CDATA[*/
+document.addEventListener('DOMContentLoaded', () => {
+
+  const labels = /*[[${labels}]]*/ [];
+  const values = /*[[${valores}]]*/ [];
+  const canvas = document.getElementById('barRank');
+
+  if (canvas && labels.length && typeof Chart !== 'undefined') {
+
+    new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Rendimiento (%)',
+          data: values,
+          backgroundColor: 'rgba(42, 122, 222, 0.25)',
+          borderColor: '#2a7ade',
+          borderWidth: 1.5
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            beginAtZero: true,
+            suggestedMax: 100
+          }
+        }
+      }
+    });
+
+  }
+
+});
+/*]]>*/
+</script>
+
+</body>
+</html>

@@ -117,14 +117,24 @@ public class ImportController {
         if (raw == null) return "";
 
         String s = raw.trim();
-        s = Normalizer.normalize(s, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", ""); // quitar tildes
-        s = s.toLowerCase(Locale.ROOT);
-        s = s.replaceAll("[\\s\\-–—]+", "_");
-        s = s.replaceAll("[^a-z0-9_]", "");
-        s = s.replaceAll("_+", "_").replaceAll("^_+|_+$", "");
-        if (s.isEmpty()) s = "columna";
 
+        // quitar tildes
+        s = Normalizer.normalize(s, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+
+        // minúsculas
+        s = s.toLowerCase(Locale.ROOT);
+
+        // convertir cualquier cosa que NO sea letra o número en "_"
+        s = s.replaceAll("[^a-z0-9]+", "_");
+
+        // limpiar múltiples "_"
+        s = s.replaceAll("_+", "_");
+
+        // quitar "_" al inicio o fin
+        s = s.replaceAll("^_+|_+$", "");
+
+        if (s.isEmpty()) s = "columna";
         return s;
     }
 

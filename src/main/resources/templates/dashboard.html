@@ -3,7 +3,7 @@
 
   <head>
     <meta charset="UTF-8" />
-    <title>Dashboard dummy</title>
+    <title>DashboardDummy</title>
     <style>
       body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
       header { margin-bottom: 1rem; }
@@ -17,9 +17,10 @@
 
   <body>
 
-    <header>
-      <h1>Cuadro de mando académico</h1>
-    </header>
+    <h1>Cuadro de mando académico</h1>
+    <ul>
+      <a th:href="@{/}"> volver</a>
+    </ul>
 
     <section>
       <form th:action="@{/dashboard}" method="get">
@@ -74,10 +75,6 @@
       </table>
 
     </section>
-
-    <ul>
-      <a th:href="@{/}"> volver</a>
-    </ul>
 
   </body>
 

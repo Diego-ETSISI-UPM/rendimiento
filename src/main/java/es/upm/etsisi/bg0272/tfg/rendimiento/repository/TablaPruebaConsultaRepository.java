@@ -5,9 +5,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 @Repository
-public class PruebaConsultaRepository {
+public class TablaPruebaConsultaRepository {
     private final JdbcTemplate jdbcTemplate;
-    public PruebaConsultaRepository(JdbcTemplate jdbcTemplate) {
+    public TablaPruebaConsultaRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
     public String obtenerTexto() {

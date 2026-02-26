@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
-  <title>Importación CSV</title>
+  <title>Importar CSV</title>
   <style>
           body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
           header { margin-bottom: 1rem; }
@@ -11,12 +11,15 @@
           table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
           th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
           th { background: #f7f7f7; }
-        </style>
+  </style>
 </head>
 
   <body>
 
     <h1>Importación de datos académicos</h1>
+    <ul>
+      <a th:href="@{/}"> volver</a>
+    </ul>
 
     <form th:action="@{/importar}" method="post" enctype="multipart/form-data">
       <input type="file" name="archivo" accept=".csv" required />
@@ -25,10 +28,6 @@
     </form>
 
     <p th:if="${mensaje}" th:text="${mensaje}"></p>
-
-    <ul>
-      <a th:href="@{/}"> volver</a>
-    </ul>
 
   </body>
 </html>
