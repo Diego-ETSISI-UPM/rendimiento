@@ -2,101 +2,112 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ranking del último año académico</title>
+  <title>Ranking (último año académico)</title>
 
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    /* ===== TIPOGRAFÍA ===== */
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      margin: 2rem;
+      color: #111;
+    }
+    h1, h2, h3 { margin-bottom: 1rem; }
     label { display:inline-block; min-width: 160px; }
-    select, input[type="text"] { padding: .35rem .5rem; }
 
-    .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin: .75rem 0; }
-    .chip  {
-      background:#f0f7ff; border:1px solid #b7d5ff; padding:.25rem .5rem;
-      border-radius:16px; display:inline-flex; align-items:center; gap:.5rem;
-    }
-    .chip button {
-      border:none; background:transparent; cursor:pointer; color:#1677ff;
-      font-size:14px;
+    /* ===== INPUTS / SELECTS ===== */
+    input[type="text"], select {
+      padding: .35rem .5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
     }
 
+    /* ===== BOTONES ===== */
+    button {
+      font-family: inherit;
+      padding: .4rem .75rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      cursor: pointer;
+    }
+    button:hover { background: #e8e8e8; }
+
+    /* ===== TABLAS ===== */
     table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-    th, td {
-      border: 1px solid #e3e3e3;
-      padding: .5rem .75rem;
-      text-align: left;
-    }
+    th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
     th { background: #f7f7f7; }
 
-    /* sugerencias autocompletado */
-    #sugerencias {
-      border:1px solid #ccc;
-      width:650px;
-      list-style:none;
-      padding-left:0;
-      margin-top:0;
-      position:absolute;
-      background:white;
-      z-index:10;
-      display:none;
+    /* ===== SUGERENCIAS (AUTOCOMPLETADO) ===== */
+    .suggest-box {
+      border: 1px solid #ccc;
+      background: #fff;
+      position: absolute;
+      z-index: 10;
+      display: none;
+      list-style: none;
+      padding-left: 0;
+      margin-top: 0;
       max-height: 280px;
-      overflow:auto;
+      overflow-y: auto;
+      width: 650px;
     }
-    #sugerencias li { padding:6px; cursor:pointer; }
-    #sugerencias li:hover { background:#ddd; }
+    .suggest-box li { padding: 6px 8px; cursor: pointer; }
+    .suggest-box li:hover, .suggest-box li.active { background: #f2f4f8; }
 
-    .disabled { background:#fafafa; border-color:#eee; cursor:not-allowed; }
+    /* ===== CHIPS ===== */
+    .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin: .75rem 0; }
+    .chip {
+      background: #f0f7ff; border: 1px solid #b7d5ff; padding: .25rem .5rem;
+      border-radius: 16px; display: inline-flex; align-items: center; gap: .5rem;
+    }
+    .chip button { background: transparent; border: none; cursor: pointer; color: #1677ff; font-size: 14px; }
+
+    /* ===== CAMPOS DESACTIVADOS ===== */
+    .disabled { background: #fafafa; border-color: #eee; cursor: not-allowed; }
   </style>
 </head>
 
 <body>
-
 <h1>Ranking de asignaturas (último año académico)</h1>
 <p><a th:href="@{/}">volver</a></p>
 
-<!-- ====================== FORMULARIO ====================== -->
+<!-- FORMULARIO -->
 <form th:action="@{/showRanking}" method="post">
+<!-- PLAN -->
+<div style="margin-bottom:.5rem;">
+  <label for="plan">Plan de estudios:</label>
+  <select id="plan" name="plan" required>
+    <option value="" disabled selected>— Selecciona un plan —</option>
+    <option th:each="p : ${planes}" th:value="${p}" th:text="${p}" th:selected="${p == planSeleccionado}"></option>
+  </select>
+</div>
 
-  <!-- PLAN -->
-  <div style="margin-bottom:.5rem;">
-    <label for="plan">Plan de estudios:</label>
-    <select id="plan" name="plan" required>
-      <option value="" disabled selected>— Selecciona un plan —</option>
-      <option th:each="p : ${planes}"
-              th:value="${p}"
-              th:text="${p}"
-              th:selected="${p == planSeleccionado}">
-      </option>
-    </select>
-  </div>
+<!-- BUSCADOR -->
+<div style="position:relative;">
+  <label for="buscador">Buscar asignaturas:</label>
+  <input type="text" id="buscador" autocomplete="off" style="width:350px;" placeholder="Escribe parte del código o nombre…"/>
+  <ul id="sugerencias" class="suggest-box"></ul>
+</div>
 
-  <!-- BUSCADOR -->
-  <div style="position:relative;">
-    <label for="buscador">Buscar asignaturas:</label>
-    <input type="text" id="buscador" autocomplete="off" style="width:350px;"
-           placeholder="Escribe parte del código o nombre…" />
-    <ul id="sugerencias"></ul>
-  </div>
+<!-- CHIPS -->
+<div class="chips" id="chips"></div>
 
-  <!-- CHIPS -->
-  <div class="chips" id="chips"></div>
+<!-- INPUTS OCULTOS -->
+<div id="hiddenInputs"></div>
 
-  <!-- INPUTS OCULTOS -->
-  <div id="hiddenInputs"></div>
-
-  <button type="submit" style="margin-top:.5rem;">Comparar</button>
-
+<button type="submit" style="margin-top:.5rem;">Comparar</button>
 </form>
-<!-- ==================== FIN FORMULARIO ==================== -->
 
 <!-- MENSAJES -->
-<div th:if="${mensaje != null}"
-     style="margin:.75rem 0; padding:.5rem .75rem; background:#fff7e6; border:1px solid #ffd591;">
+<div th:if="${mensaje != null}" style="margin:.75rem 0; padding:.5rem .75rem; background:#fff7e6; border:1px solid #ffd591;">
   <span th:text="${mensaje}"></span>
 </div>
 
 <!-- RESULTADOS -->
 <div th:if="${resultados != null}">
-  <h3 style="margin-top:1rem;">Rendimiento (último año) — orden ascendente</h3>
+  <h3 style="margin-top:1rem;">Rendimiento (último año) — Orden ascendente</h3>
 
   <div style="height:360px; margin:.5rem 0 1rem;">
     <canvas id="barRank"></canvas>
@@ -124,168 +135,137 @@
   </table>
 </div>
 
-
-<!-- ================== SCRIPTS ================== -->
-
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src=https://cdn.jsdelivr.net/npm/chart.js></script>
 
 <!-- Autocompletado + chips -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const planSel = document.getElementById('plan');
+      const input   = document.getElementById('buscador');
+      const lista   = document.getElementById('sugerencias');
+      const chips   = document.getElementById('chips');
+      const hidden  = document.getElementById('hiddenInputs');
+      const seleccion = new Set();
 
-  const planSel = document.getElementById('plan');
-  const input   = document.getElementById('buscador');
-  const lista   = document.getElementById('sugerencias');
-  const chips   = document.getElementById('chips');
-  const hidden  = document.getElementById('hiddenInputs');
-  const seleccion = new Set();
-
-  /* habilitar/deshabilitar buscador según plan */
-  function toggleBuscador() {
-    const enabled = !!planSel.value;
-    input.disabled = !enabled;
-    input.classList.toggle('disabled', !enabled);
-    input.placeholder = enabled
-        ? "Escribe parte del código o nombre…"
-        : "Selecciona antes un plan…";
-    if (!enabled) {
-      lista.style.display = 'none';
-      input.value = '';
-    }
-  }
-  toggleBuscador();
-
-  planSel.addEventListener('change', () => {
-    seleccion.clear();
-    chips.innerHTML = '';
-    hidden.innerHTML = '';
-    input.value = '';
-    lista.style.display = 'none';
-    toggleBuscador();
-  });
-
-  /* inputs ocultos */
-  function renderHiddenInputs() {
-    hidden.innerHTML = '';
-    seleccion.forEach(v => {
-      const h = document.createElement('input');
-      h.type  = 'hidden';
-      h.name  = 'asignaturas';
-      h.value = v;
-      hidden.appendChild(h);
-    });
-  }
-
-  /* chips */
-  function addChip(texto) {
-    if (seleccion.has(texto)) return;
-    seleccion.add(texto);
-
-    const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.innerHTML = `<span>${texto}</span>`;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = '✕';
-    btn.onclick = () => {
-      chips.removeChild(chip);
-      seleccion.delete(texto);
-      renderHiddenInputs();
-    };
-
-    chip.appendChild(btn);
-    chips.appendChild(chip);
-    renderHiddenInputs();
-  }
-
-  /* autocompletado AJAX */
-  let timer;
-  input.addEventListener('input', () => {
-    if (input.disabled) return;
-    clearTimeout(timer);
-    const q = input.value.trim();
-    if (q.length < 2) { lista.style.display='none'; return; }
-
-    const plan = planSel.value;
-    if (!plan) { lista.style.display='none'; return; }
-
-    timer = setTimeout(async () => {
-      try {
-        const url = `/api/asignaturas/plan?plan=${encodeURIComponent(plan)}&q=${encodeURIComponent(q)}`;
-        const resp = await fetch(url);
-        const datos = await resp.json();
-
-        lista.innerHTML = '';
-        if (!datos.length) { lista.style.display='none'; return; }
-
-        datos.forEach(asig => {
-          const li = document.createElement('li');
-          li.textContent = asig;
-          li.onmouseover = () => li.style.background = '#ddd';
-          li.onmouseout  = () => li.style.background = 'white';
-          li.onclick = () => {
-            addChip(asig);
-            lista.style.display = 'none';
-            input.value = '';
-            input.focus();
-          };
-          lista.appendChild(li);
-        });
-
-        lista.style.display = 'block';
-      } catch (e) {
-        console.error(e);
-        lista.style.display = 'none';
+      function toggleBuscador() {
+        const enabled = !!planSel.value;
+        input.disabled = !enabled;
+        input.classList.toggle('disabled', !enabled);
+        input.placeholder = enabled ? "Escribe parte del código o nombre…" : "Selecciona antes un plan…";
+        if (!enabled) { lista.style.display = 'none'; input.value = ''; }
       }
-    }, 250);
-  });
+      toggleBuscador();
 
-  document.addEventListener('click', (e) => {
-    if (e.target !== input) lista.style.display = 'none';
-  });
+      planSel.addEventListener('change', () => {
+        seleccion.clear();
+        chips.innerHTML = '';
+        hidden.innerHTML = '';
+        input.value = '';
+        lista.style.display = 'none';
+        toggleBuscador();
+      });
 
-});
-</script>
+      function renderHiddenInputs() {
+        hidden.innerHTML = '';
+        seleccion.forEach(v => {
+          const h = document.createElement('input');
+          h.type  = 'hidden';
+          h.name  = 'asignaturas';
+          h.value = v;
+          hidden.appendChild(h);
+        });
+      }
 
+      function addChip(texto) {
+        if (seleccion.has(texto)) return;
+        seleccion.add(texto);
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.innerHTML = `<span>${texto}</span>`;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = '✕';
+        btn.onclick = () => {
+          chips.removeChild(chip);
+          seleccion.delete(texto);
+          renderHiddenInputs();
+        };
+        chip.appendChild(btn);
+        chips.appendChild(chip);
+        renderHiddenInputs();
+      }
+
+      let timer;
+      input.addEventListener('input', () => {
+        if (input.disabled) return;
+        clearTimeout(timer);
+        const q = input.value.trim();
+        if (q.length < 2) { lista.style.display='none'; return; }
+
+        const plan = planSel.value;
+        if (!plan) { lista.style.display='none'; return; }
+
+        timer = setTimeout(async () => {
+          try {
+            const url = `/api/asignaturas/plan?plan=${encodeURIComponent(plan)}&q=${encodeURIComponent(q)}`;
+            const resp = await fetch(url);
+            const datos = await resp.json();
+
+            lista.innerHTML = '';
+            if (!datos.length) { lista.style.display='none'; return; }
+
+            datos.forEach(asig => {
+              const li = document.createElement('li');
+              li.textContent = asig;
+              li.onclick = () => {
+                addChip(asig);
+                lista.style.display = 'none';
+                input.value = '';
+                input.focus();
+              };
+              lista.appendChild(li);
+            });
+
+            lista.style.display = 'block';
+          } catch (e) {
+            console.error(e);
+            lista.style.display = 'none';
+          }
+        }, 250);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (e.target !== input) lista.style.display = 'none';
+      });
+    });
+  </script>
 
 <!-- Gráfico -->
 <script th:inline="javascript">
-/*<![CDATA[*/
-document.addEventListener('DOMContentLoaded', () => {
+    /*<![CDATA[*/
+    document.addEventListener('DOMContentLoaded', () => {
+      const labels = /*[[${labels}]]*/ [];
+      const values = /*[[${valores}]]*/ [];
+      const canvas = document.getElementById('barRank');
 
-  const labels = /*[[${labels}]]*/ [];
-  const values = /*[[${valores}]]*/ [];
-  const canvas = document.getElementById('barRank');
-
-  if (canvas && labels.length && typeof Chart !== 'undefined') {
-    new Chart(canvas.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Rendimiento (%)',
-          data: values,
-          backgroundColor: 'rgba(42, 122, 222, 0.25)',
-          borderColor: '#2a7ade',
-          borderWidth: 1.5
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { beginAtZero: true, suggestedMax: 100 }
-        }
+      if (canvas && labels.length && typeof Chart !== 'undefined') {
+        new Chart(canvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{ label: 'Rendimiento (%)', data: values,
+              backgroundColor: 'rgba(42, 122, 222, 0.25)', borderColor: '#2a7ade', borderWidth: 1.5 }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            scales: { x: { beginAtZero: true, suggestedMax: 100 } }
+          }
+        });
       }
     });
-  }
-
-});
-/*]]>*/
-</script>
-
+    /*]]>*/
+  </script>
 </body>
 </html>

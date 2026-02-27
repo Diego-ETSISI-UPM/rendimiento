@@ -1,73 +1,105 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Evolución de Asignatura</title>
+
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
-    header { margin-bottom: 1rem; }
-    .row { display: flex; gap: 1rem; margin: 1rem 0; }
-    .card { border: 1px solid #ddd; padding: 1rem; border-radius: .5rem; min-width: 180px; }
+    /* ===== TIPOGRAFÍA ===== */
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      margin: 2rem;
+      color: #111;
+    }
+    h1, h2, h3 { margin-bottom: 1rem; }
+
+    /* ===== INPUTS / SELECTS ===== */
+    input[type="text"], select {
+      padding: .35rem .5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    /* ===== BOTONES ===== */
+    button {
+      font-family: inherit;
+      padding: .4rem .75rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      cursor: pointer;
+    }
+    button:hover { background: #e8e8e8; }
+
+    /* ===== TABLAS ===== */
     table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
     th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
     th { background: #f7f7f7; }
+
+    /* ===== SUGERENCIAS (AUTOCOMPLETADO) ===== */
+    .suggest-box {
+      border: 1px solid #ccc;
+      background: #fff;
+      position: absolute;
+      z-index: 10;
+      display: none;
+      list-style: none;
+      padding-left: 0;
+      margin-top: 0;
+      max-height: 280px;
+      overflow-y: auto;
+      width: 650px;
+    }
+    .suggest-box li { padding: 6px 8px; cursor: pointer; }
+    .suggest-box li:hover, .suggest-box li.active { background: #f2f4f8; }
+
+    /* ===== CAMPOS DESACTIVADOS ===== */
+    .disabled { background: #fafafa; border-color: #eee; cursor: not-allowed; }
   </style>
 </head>
 
 <body>
-
 <h1>Evolución de Rendimiento por Asignatura</h1>
 <p><a th:href="@{/}">volver</a></p>
 
+<!-- Formulario de búsqueda -->
 <form th:action="@{/showAsignatura}" method="post">
-  <label>Buscar asignatura:</label>
-  <input type="text" id="buscador" name="asignatura" autocomplete="off" style="width:350px;" />
-
-  <ul id="sugerencias"
-      style="border:1px solid #ccc;
-               width:650px;
-               list-style:none;
-               padding-left:0;
-               margin-top:0;
-               position:absolute;
-               background:white;
-               z-index:10;
-               display:none;">
-  </ul>
-
-  <button type="submit" style="margin-top:1rem;">Ver evolución</button>
+<label>Buscar asignatura:</label>
+<input type="text" id="buscador" name="asignatura" autocomplete="off" style="width:350px;" />
+<ul id="sugerencias" class="suggest-box"></ul>
+<button type="submit" style="margin-top:1rem;">Ver evolución</button>
 </form>
 
-<!-- Mensajes y lista de coincidencias (resolución en servidor) -->
-<div th:if="${mensaje != null}"
-     style="margin:.75rem 0; padding:.5rem .75rem; background:#fff7e6; border:1px solid #ffd591;">
+<!-- Mensajes / coincidencias (si aplica en tu lógica) -->
+<div th:if="${mensaje != null}" style="margin:.75rem 0; padding:.5rem .75rem; background:#fff7e6; border:1px solid #ffd591;">
   <span th:text="${mensaje}"></span>
 </div>
 
 <div th:if="${coincidencias != null}">
   <ul style="list-style: none; padding-left: 0;">
     <li th:each="c : ${coincidencias}" style="margin: .25rem 0;">
-      <form th:action="@{/showAsignatura}" method="post" style="display:inline;">
-        <input type="hidden" name="asignatura" th:value="${c}"/>
-        <button type="submit" style="background:none; border:none; color:#1677ff; cursor:pointer; padding:0;">
-          <span th:text="${c}"></span>
-        </button>
+      @{/showAsignatura}
+      <input type="hidden" name="asignatura" th:value="${c}"/>
+      <button type="submit" style="background:none; border:none; color:#1677ff; cursor:pointer; padding:0;">
+        <span th:text="${c}"></span>
+      </button>
       </form>
     </li>
   </ul>
 </div>
 
-<!-- Bloque de resultados -->
+<!-- Resultados -->
 <div th:if="${evolucion != null}">
   <h2 th:text="'Asignatura: ' + ${seleccionada}"></h2>
 
-  <!-- Gráfico de barras antes de la tabla -->
+  <!-- Gráfico de barras -->
   <h3 style="margin-top:1.5rem;">Evolución del rendimiento (%)</h3>
   <div style="height:260px;">
     <canvas id="rendBarChart"></canvas>
   </div>
 
-  <!-- Tabla con datos -->
   <table>
     <thead>
     <tr>
@@ -88,12 +120,10 @@
   </table>
 </div>
 
-<!-- ==== Scripts al final (DOM ya cargado) ==== -->
-
-<!-- Chart.js desde CDN -->
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Autocompletado (cliente) -->
+<!-- Autocompletado -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
       const input = document.getElementById("buscador");
@@ -110,18 +140,13 @@
           try {
             const resp = await fetch(`/api/asignaturas/buscar?q=${encodeURIComponent(q)}`);
             const datos = await resp.json();
-
             lista.innerHTML = "";
             if (!datos.length) { lista.style.display = "none"; return; }
 
             datos.forEach(asig => {
               const li = document.createElement("li");
               li.textContent = asig;
-              li.style.padding = "6px";
-              li.style.cursor = "pointer";
               li.addEventListener("click", () => { input.value = asig; lista.style.display = "none"; });
-              li.addEventListener("mouseover", () => li.style.background = "#ddd");
-              li.addEventListener("mouseout",  () => li.style.background = "white");
               lista.appendChild(li);
             });
 
@@ -130,7 +155,7 @@
             console.error(e);
             lista.style.display = "none";
           }
-        }, 250); // debounce
+        }, 250);
       });
 
       document.addEventListener("click", (e) => {
@@ -139,54 +164,29 @@
     });
   </script>
 
-<!-- Gráfico de barras (usa los arrays del modelo) -->
+<!-- Gráfico (usa los arrays del modelo) -->
 <script th:inline="javascript">
     /*<![CDATA[*/
     document.addEventListener('DOMContentLoaded', () => {
       const labels = /*[[${labels}]]*/ [];
       const data   = /*[[${rendimientos}]]*/ [];
       const canvas = document.getElementById('rendBarChart');
-
       if (!canvas || !labels.length || typeof Chart === 'undefined') return;
 
       new Chart(canvas.getContext('2d'), {
         type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Rendimiento (%)',
-            data: data,
-            backgroundColor: 'rgba(42, 122, 222, 0.25)',
-            borderColor: '#2a7ade',
-            borderWidth: 1.5
-          }]
-        },
+        data: { labels, datasets: [{ label: 'Rendimiento (%)', data, backgroundColor: 'rgba(42, 122, 222, 0.25)', borderColor: '#2a7ade', borderWidth: 1.5 }] },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: true },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => ` ${Number(ctx.parsed.y).toFixed(2)} %`
-              }
-            }
-          },
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: true } },
           scales: {
-            y: {
-              beginAtZero: true,
-              suggestedMax: 100,
-              title: { display: true, text: 'Rendimiento (%)' }
-            },
-            x: {
-              title: { display: true, text: 'Año académico' }
-            }
+            y: { beginAtZero: true, suggestedMax: 100, title: { display: true, text: 'Rendimiento (%)' } },
+            x: { title: { display: true, text: 'Año académico' } }
           }
         }
       });
     });
     /*]]>*/
   </script>
-
 </body>
 </html>
