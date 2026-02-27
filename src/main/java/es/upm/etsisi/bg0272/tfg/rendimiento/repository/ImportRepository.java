@@ -10,13 +10,10 @@ import java.util.stream.Collectors;
 
 @Repository
 public class ImportRepository {
-
     private final JdbcTemplate jdbcTemplate;
-
     public ImportRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
-
     // === Declaración de columnas numéricas (normalizadas) ===
     private static final Set<String> NUMERIC_DECIMAL_0 = Set.of(
             "numero_de_matriculas",
@@ -35,53 +32,37 @@ public class ImportRepository {
         NUMERIC_DECIMAL_2.forEach(c -> m.put(c, "DECIMAL(18,2)"));
         COLUMN_TYPES = Collections.unmodifiableMap(m);
     }
-
     // === Creación de tabla con clave primaria compuesta ===
     public void crearTablaDesdeCabecera(List<String> columnas) {
-
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE IF NOT EXISTS `datos_csv` (\n");
-
         boolean first = true;
-
         for (String col : columnas) {
             String tipo = COLUMN_TYPES.getOrDefault(col, "VARCHAR(255)");
             if (!first) sb.append(",\n");
             first = false;
             sb.append("  `").append(col).append("` ").append(tipo);
         }
-
         // PRIMARY KEY compuesta
         sb.append(",\n  PRIMARY KEY (`ano_academico`, `numero_de_matriculas`, `asignatura`)");
         sb.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-
         jdbcTemplate.execute(sb.toString());
     }
-
     // === Inserción con ON DUPLICATE KEY UPDATE ===
-    public int insertarFilasSiNoExistenBatch(
-            List<Map<String, String>> filas,
-            List<String> columnasIncluidas,
-            int batchSize) {
-
+    public int insertarFilasSiNoExistenBatch(List<Map<String, String>> filas, List<String> columnasIncluidas, int batchSize) {
         if (filas == null || filas.isEmpty()) return 0;
-
         String columnasSQL = columnasIncluidas.stream()
                 .map(c -> "`" + c + "`")
                 .collect(Collectors.joining(", "));
-
         String placeholdersSQL = columnasIncluidas.stream()
                 .map(c -> "?")
                 .collect(Collectors.joining(", "));
-
         String updateSQL = columnasIncluidas.stream()
                 .filter(c -> !Set.of("ano_academico", "numero_de_matriculas", "asignatura").contains(c))
                 .map(c -> "`" + c + "` = VALUES(`" + c + "`)")
                 .collect(Collectors.joining(", "));
-
         String sql = "INSERT INTO `datos_csv` (" + columnasSQL + ") VALUES (" + placeholdersSQL + ")\n"
                 + "ON DUPLICATE KEY UPDATE " + updateSQL;
-
         int[][] counts = jdbcTemplate.batchUpdate(
                 sql,
                 filas,
@@ -102,12 +83,10 @@ public class ImportRepository {
                     }
                 }
         );
-
         int total = 0;
         for (int[] lote : counts)
             for (int c : lote)
                 total += (c >= 0 ? 1 : 0);
-
         return total;
     }
 }

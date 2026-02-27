@@ -14,7 +14,7 @@ public class ShowRankingRepository {
         this.jdbc = jdbc;
     }
 
-    // ► 1) Obtener todos los planes disponibles
+    // 1) Obtener todos los planes disponibles
     public List<String> obtenerPlanes() {
         String sql = """
             SELECT DISTINCT plan_de_estudios
@@ -25,7 +25,7 @@ public class ShowRankingRepository {
         return jdbc.queryForList(sql, String.class);
     }
 
-    // ► 2) Obtener asignaturas del plan seleccionado (para el autocompletado)
+    // 2) Obtener asignaturas del plan seleccionado (para el autocompletado)
     public List<String> buscarAsignaturasDePlan(String plan, String q) {
         String sql = """
             SELECT DISTINCT asignatura
@@ -38,7 +38,7 @@ public class ShowRankingRepository {
         return jdbc.queryForList(sql, String.class, plan, q);
     }
 
-    // ► 3) Ranking del último año académico de cada asignatura seleccionada
+    // 3) Ranking del último año académico de cada asignatura seleccionada
     public List<Map<String,Object>> rankingUltimoAnio(String plan, List<String> asignaturas) {
 
         if (asignaturas == null || asignaturas.isEmpty())
