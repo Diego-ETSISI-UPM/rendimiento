@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
-  <head>
+<head>
     <meta charset="UTF-8">
     <title>Acerca De</title>
     <style>
@@ -12,16 +12,17 @@
       table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
       th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
       th { background: #f7f7f7; }
-    </style>
-  </head>
 
-  <body>
-    <h1>Trabajo de Fin de Grado</h1>
-    <ul>
+    </style>
+</head>
+
+<body>
+  <h1>Trabajo de Fin de Grado</h1>
+  <ul>
       <a th:href="@{/}"> volver</a>
-    </ul>
-    <p>BG0272</p>
-    <img th:src="@{/images/logo_edit.jpg}" alt="Logo del portal" class="logo">
-  </body>
+  </ul>
+  <p>BG0272</p>
+  <img alt="Logo del portal" class="logo" th:src="@{/images/logo_edit.jpg}">
+</body>
 
 </html>

@@ -1,13 +1,16 @@
 package es.upm.etsisi.bg0272.tfg.rendimiento.controllers;
 
 import es.upm.etsisi.bg0272.tfg.rendimiento.repository.ShowComparativaRepository;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 @Controller
 public class ShowComparativaController {
@@ -20,13 +23,9 @@ public class ShowComparativaController {
 
     @GetMapping("/showComparativa")
     public String comparativaGet(Model model) {
-        // La selección se construye en cliente (chips) y no cargamos nada inicial
         return "showComparativa";
     }
 
-    /**
-     * Recibe múltiples asignaturas (inputs hidden con name="asignaturas")
-     */
     @PostMapping("/showComparativa")
     public String comparativaPost(@RequestParam(name = "asignaturas", required = false) List<String> seleccion, Model model) {
         if (seleccion == null || seleccion.isEmpty()) {
@@ -34,7 +33,7 @@ public class ShowComparativaController {
             return "showComparativa";
         }
 
-        // Normalizar: sin duplicados y recortando espacios
+        // normalizar, sin duplicados y recortando espacios
         List<String> asignaturas = new ArrayList<>();
         LinkedHashSet<String> set = new LinkedHashSet<>();
         for (String s : seleccion) {
@@ -47,7 +46,7 @@ public class ShowComparativaController {
 
         var datos = repo.obtenerRendimientoComparativa(asignaturas);
 
-        // Preparar arrays para la gráfica (barras horizontales)
+        // preparar arrays para la gráfica de barras horizontales
         List<String> labels = new ArrayList<>();
         List<BigDecimal> valores = new ArrayList<>();
         for (var fila : datos) {

@@ -3,9 +3,13 @@ package es.upm.etsisi.bg0272.tfg.rendimiento.controllers;
 import es.upm.etsisi.bg0272.tfg.rendimiento.repository.ShowRankingRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class ShowRankingController {
@@ -29,21 +33,19 @@ public class ShowRankingController {
             Model model) {
 
         model.addAttribute("planes", repo.obtenerPlanes());
-
         System.out.println("POST /showRanking → plan=" + plan + " asignaturas=" + asignaturas);
-
         model.addAttribute("planSeleccionado", plan);
-
         if (asignaturas == null || asignaturas.isEmpty()) {
             model.addAttribute("mensaje", "Selecciona al menos una asignatura.");
             return "showRanking";
+
         }
 
         var datos = repo.rankingUltimoAnio(plan, asignaturas);
 
         model.addAttribute("resultados", datos);
 
-        // Arrays para Chart.js
+        // arrays para Chart.js
         List<String> labels = new ArrayList<>();
         List<Double> valores = new ArrayList<>();
         for (var fila : datos) {
@@ -57,7 +59,7 @@ public class ShowRankingController {
         return "showRanking";
     }
 
-    // === Autocompletado relacionado con el plan ===
+    // autocompletado
     @GetMapping("/api/asignaturas/plan")
     @ResponseBody
     public List<String> buscarPorPlan(

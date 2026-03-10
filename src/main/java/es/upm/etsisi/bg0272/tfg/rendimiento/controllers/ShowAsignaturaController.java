@@ -4,7 +4,10 @@ import es.upm.etsisi.bg0272.tfg.rendimiento.repository.ShowAsignaturaRepository;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -21,7 +24,6 @@ public class ShowAsignaturaController {
 
     @GetMapping("/showAsignatura")
     public String showAsignatura(Model model) {
-        // ya no cargamos miles de opciones; la búsqueda será por AJAX
         return "showAsignatura";
     }
 
@@ -38,7 +40,7 @@ public class ShowAsignaturaController {
 
         if (coincidencias.isEmpty()) {
             model.addAttribute("mensaje", "No se encontraron asignaturas que contengan: \"" + consultaUsuario + "\"");
-            // Devolvemos la página vacía pero con mensaje y el valor tecleado
+            // devolver página vacía pero con mensaje y el valor tecleado
             model.addAttribute("seleccionada", consultaUsuario);
             return "showAsignatura";
         }

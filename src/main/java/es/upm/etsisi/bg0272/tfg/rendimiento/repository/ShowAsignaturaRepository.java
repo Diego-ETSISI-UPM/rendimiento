@@ -25,19 +25,19 @@ public class ShowAsignaturaRepository {
 
     public List<Map<String, Object>> obtenerEvolucion(String asignatura) {
         String sql = """
-            SELECT 
-                ano_academico,
-                SUM(COALESCE(n_matriculados, 0)) AS total_matriculados,
-                SUM(COALESCE(n_aprobados,   0)) AS total_aprobados,
-                CASE 
-                    WHEN SUM(COALESCE(n_matriculados, 0)) = 0 THEN 0
-                    ELSE ROUND(SUM(COALESCE(n_aprobados, 0)) / SUM(COALESCE(n_matriculados, 0)) * 100, 2)
-                END AS rendimiento_real
-            FROM datos_csv
-            WHERE asignatura = ?
-            GROUP BY ano_academico
-            ORDER BY CAST(SUBSTRING(ano_academico, 1, 4) AS UNSIGNED)
-        """;
+                    SELECT 
+                        ano_academico,
+                        SUM(COALESCE(n_matriculados, 0)) AS total_matriculados,
+                        SUM(COALESCE(n_aprobados,   0)) AS total_aprobados,
+                        CASE 
+                            WHEN SUM(COALESCE(n_matriculados, 0)) = 0 THEN 0
+                            ELSE ROUND(SUM(COALESCE(n_aprobados, 0)) / SUM(COALESCE(n_matriculados, 0)) * 100, 2)
+                        END AS rendimiento_real
+                    FROM datos_csv
+                    WHERE asignatura = ?
+                    GROUP BY ano_academico
+                    ORDER BY CAST(SUBSTRING(ano_academico, 1, 4) AS UNSIGNED)
+                """;
 
         return jdbc.query(
                 sql,
@@ -64,12 +64,12 @@ public class ShowAsignaturaRepository {
 
     public List<String> buscarAsignaturas(String q) {
         String sql = """
-            SELECT asignatura 
-            FROM datos_csv
-            WHERE asignatura LIKE CONCAT('%', ?, '%')
-            GROUP BY asignatura
-            ORDER BY asignatura            
-        """;
+                    SELECT asignatura 
+                    FROM datos_csv
+                    WHERE asignatura LIKE CONCAT('%', ?, '%')
+                    GROUP BY asignatura
+                    ORDER BY asignatura            
+                """;
         return jdbc.queryForList(sql, String.class, q);
     }
 }

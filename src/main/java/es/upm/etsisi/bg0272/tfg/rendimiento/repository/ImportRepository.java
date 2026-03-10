@@ -10,11 +10,7 @@ import java.util.stream.Collectors;
 
 @Repository
 public class ImportRepository {
-    private final JdbcTemplate jdbcTemplate;
-    public ImportRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
-    // === Declaración de columnas numéricas (normalizadas) ===
+    // declaración de columnas numéricas (normalizadas)
     private static final Set<String> NUMERIC_DECIMAL_0 = Set.of(
             "numero_de_matriculas",
             "n_matriculados",
@@ -26,13 +22,21 @@ public class ImportRepository {
             "eficiencia_en_matricula"
     );
     private static final Map<String, String> COLUMN_TYPES;
+
     static {
         Map<String, String> m = new HashMap<>();
         NUMERIC_DECIMAL_0.forEach(c -> m.put(c, "DECIMAL(10,0)"));
         NUMERIC_DECIMAL_2.forEach(c -> m.put(c, "DECIMAL(18,2)"));
         COLUMN_TYPES = Collections.unmodifiableMap(m);
     }
-    // === Creación de tabla con clave primaria compuesta ===
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public ImportRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    // creación de tabla con clave primaria compuesta
     public void crearTablaDesdeCabecera(List<String> columnas) {
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE IF NOT EXISTS `datos_csv` (\n");
@@ -48,7 +52,8 @@ public class ImportRepository {
         sb.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
         jdbcTemplate.execute(sb.toString());
     }
-    // === Inserción con ON DUPLICATE KEY UPDATE ===
+
+    // inserción con ON DUPLICATE KEY UPDATE
     public int insertarFilasSiNoExistenBatch(List<Map<String, String>> filas, List<String> columnasIncluidas, int batchSize) {
         if (filas == null || filas.isEmpty()) return 0;
         String columnasSQL = columnasIncluidas.stream()
