@@ -12,7 +12,7 @@
           table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
           th, td { border: 1px solid #e3e3e3; padding: .5rem .75rem; text-align: left; }
           th { background: #f7f7f7; }
-
+          .errorMessage { color: #b00020; font-style: italic; }
     </style>
 </head>
 
@@ -21,6 +21,12 @@
     <h1>Home</h1>
 
     <p>portal de rendimiento académico</p>
+
+    <!-- se muestra en caso de error -->
+    <div th:if="${errorMessage}" class="errorMessage">
+        <p th:text="${errorMessage}"></p>
+    </div>
+
     <ul>
         <li>
             <a th:href="@{/importar}"> Importar .csv</a>
